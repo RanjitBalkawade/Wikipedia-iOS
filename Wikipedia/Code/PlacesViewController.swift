@@ -251,6 +251,10 @@ class PlacesViewController: ViewController, UISearchBarDelegate, ArticlePopoverV
         
         locationManager.startMonitoringLocation()
         mapView.showsUserLocation = true
+        
+        if let customLocation {
+            zoomAndPanMapView(toLocation: customLocation)
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -259,6 +263,7 @@ class PlacesViewController: ViewController, UISearchBarDelegate, ArticlePopoverV
         NotificationCenter.default.removeObserver(self, name: UIWindow.keyboardWillHideNotification, object: nil)
         locationManager.stopMonitoringLocation()
         mapView.showsUserLocation = false
+        customLocation = nil
     }
 
     private func constrainButtonsToNavigationBar() {
@@ -442,6 +447,18 @@ class PlacesViewController: ViewController, UISearchBarDelegate, ArticlePopoverV
         
         let initialRegion = coordinates.wmf_boundingRegion(with: 50)
         return coordinates.wmf_boundingRegion(with: 0.25 * initialRegion.width)
+    }
+    
+    private var customLocation: CLLocation? {
+        didSet {
+            if mapView != nil, let customLocation {
+                zoomAndPanMapView(toLocation: customLocation)
+            }
+        }
+    }
+    
+    @objc func setCustomLocation(location: CLLocation) {
+        customLocation = location
     }
     
     // MARK: - Searching
@@ -2382,7 +2399,10 @@ extension PlacesViewController: LocationManagerDelegate {
             return
         }
         panMapToNextLocationUpdate = false
-        zoomAndPanMapView(toLocation: location)
+        
+        if self.customLocation == nil {
+            zoomAndPanMapView(toLocation: location)
+        }
     }
 
     func locationManager(_ locationManager: LocationManagerProtocol, didUpdate heading: CLHeading) {

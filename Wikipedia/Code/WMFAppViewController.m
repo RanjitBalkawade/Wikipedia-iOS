@@ -1210,6 +1210,9 @@ NSString *const WMFLanguageVariantAlertsLibraryVersion = @"WMFLanguageVariantAle
                 // For "View on a map" action to succeed, view mode has to be set to map.
                 [[self placesViewController] updateViewModeToMap];
                 [[self placesViewController] showArticleURL:articleURL];
+            } else if (activity.wmf_location) {
+                [[self placesViewController] updateViewModeToMap];
+                [[self placesViewController] setCustomLocationWithLocation:activity.wmf_location];
             }
         } break;
         case WMFUserActivityTypeContent: {
