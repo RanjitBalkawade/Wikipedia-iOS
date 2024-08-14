@@ -62,15 +62,36 @@ __attribute__((annotate("returns_localized_nsstring"))) static inline NSString *
 + (instancetype)wmf_placesActivityWithURL:(NSURL *)activityURL {
     NSURLComponents *components = [NSURLComponents componentsWithURL:activityURL resolvingAgainstBaseURL:NO];
     NSURL *articleURL = nil;
+    double latitude = 0.0;
+    double longitude = 0.0;
+    BOOL hasLatitude = NO;
+    BOOL hasLongitude = NO;
+    
     for (NSURLQueryItem *item in components.queryItems) {
         if ([item.name isEqualToString:@"WMFArticleURL"]) {
             NSString *articleURLString = item.value;
             articleURL = [NSURL URLWithString:articleURLString];
-            break;
+        } else if ([item.name isEqualToString:@"lat"]) {
+            latitude = [item.value doubleValue];
+            hasLatitude = YES;
+        } else if ([item.name isEqualToString:@"lon"]) {
+            longitude = [item.value doubleValue];
+            hasLongitude = YES;
         }
     }
+    
     NSUserActivity *activity = [self wmf_pageActivityWithName:@"Places"];
     activity.webpageURL = articleURL;
+    
+    NSMutableDictionary *userInfo = [activity.userInfo mutableCopy] ?: [NSMutableDictionary new];
+    
+    if (hasLatitude && hasLongitude) {
+        userInfo[@"latitude"] = @(latitude);
+        userInfo[@"longitude"] = @(longitude);
+    }
+    
+    activity.userInfo = [userInfo copy];
+    
     return activity;
 }
 
@@ -262,6 +283,18 @@ __attribute__((annotate("returns_localized_nsstring"))) static inline NSString *
     } else {
         return self.webpageURL;
     }
+}
+
+- (nullable CLLocation *)wmf_location {
+    NSNumber *latitudeNumber = self.userInfo[@"latitude"];
+    NSNumber *longitudeNumber = self.userInfo[@"longitude"];
+    
+    if (latitudeNumber && longitudeNumber) {
+        CLLocationDegrees latitude = [latitudeNumber doubleValue];
+        CLLocationDegrees longitude = [longitudeNumber doubleValue];
+        return [[CLLocation alloc] initWithLatitude:latitude longitude:longitude];
+    }
+    return nil;
 }
 
 - (NSURL *)wmf_contentURL {
